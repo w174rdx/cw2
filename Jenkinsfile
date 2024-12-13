@@ -8,7 +8,7 @@ pipeline {
 		stage('Docker image build') {
 			steps {
 				echo 'Building docker image'
-				sh ' docker build --tag martinmacd/server-cw2-v1 .'
+				sh ' docker build --tag snaxzee/cw22-server .'
 				echo 'Docker image built succesfully'
 			}
 		}
