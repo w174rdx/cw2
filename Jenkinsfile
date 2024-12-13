@@ -17,8 +17,8 @@ pipeline {
 			steps {
 				echo 'Testing docker image'
 				sh '''
-					docker image inspect martinmacd/server-cw2-v1
-					docker run --name test-container -p 8081:8080 -d martinmacd/server-cw2-v1
+					docker image inspect snaxzee/cw22-server
+					docker run --name test-container -p 8081:8080 -d snaxzee/cw22-server
 					docker ps
 					docker stop test-container
 					docker rm test-container
@@ -34,16 +34,17 @@ pipeline {
 
 		stage('Dockerhub image push') {
 			steps {
-				sh 'docker push martinmacd/server-cw2-v1'
+				sh 'docker push snaxzee/cw22-server'
 			}
 		}
 
 		stage('Deploy') {
 			steps { 
 				sshagent(['jenkins-k8s-ssh-key']) {
-					sh 'kubectl create deployment cw2-server-v1 --image=martinmacd/server-cw2-v1:latest'
+					sh 'kubectl create deployment cw22-server --image=snaxzee/cw22-server:latest'
 				}
 			}
 		}
 	}
 }
+
