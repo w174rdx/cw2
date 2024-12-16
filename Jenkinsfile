@@ -1,49 +1,56 @@
-//Jenkinsfile (Declarative pipeline)
+// Jenkinsfile (Declarative Pipeline)
 pipeline {
-	agent any
-	environment {
-		DOCKERHUB_CREDS = credentials('docker')
+    agent any
+    environment {
+        DOCKERHUB_CREDS = credentials('dockerhub')
+	
+    }
+
+    stages {
+        stage('Docker Image Build') {
+            steps {
+                echo 'Building Docker Image...'
+                sh 'docker build --tag snaxzee/cw2-server:1.0 .'
+                echo 'Docker Image Built successfully!'
+            }
         }
-	stages {
-		stage('Docker image build') {
-			steps {
-				echo 'Building docker image'
-				sh 'docker build --tag snaxzee/cw2-server:1.0 .'
-				echo 'Docker image built successfully'
-			}
-		}
 
-		stage('Test docker image') {
-			steps {
-				echo 'Testing docker image'
-				sh '''
-					docker image inspect snaxzee/cw2-server:1.0
-					docker run --name test-container -p 8081:8080 -d snaxzee/cw2-server:1.0
-					docker ps
-					docker stop test-container
-					docker rm test-container
-				'''
-			}
-		}
-		
-		stage('Dockerhub login') {
-			steps {
-				sh 'echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin'
-			}
-		}
+        stage('Test Docker Image') {
+            steps {
+                echo 'Testing Docker Image...'
+                sh '''
+                    docker image inspect snaxzee/cw2-server:1.0
+                    docker run --name test-container -p 8081:8080 -d snaxzee/cw2-server:1.0
+                    docker ps
+                    docker stop test-container
+                    docker rm test-container
+                '''
+            }
+        }
 
-		stage('Dockerhub image push') {
-			steps {
-				sh 'docker push snaxzee/cw2-server:1.0'
-			}
-		}
+        stage('DockerHub Login') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin'
+            }
+        }
 
-		stage('Deploy') {
-			steps { 
-				sshagent(['jenkins-k8s-ssh-key']) {
-					sh 'kubectl create deployment cw2-server --image=snaxzee/cw2-server:1.0'
-				}
-			}
-		}
-	}
+        stage('DockerHub Image Push') {
+            steps {
+		echo 'Pushing image to DockerHub'
+                sh 'docker push snaxzee/cw2-server:1.0'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sshagent(['jenkins-k8s-ssh-key']) {
+                    echo 'Updating the deployment with the new image'
+                    sh 'kubectl set image deployments/kubernetes-task2 cw2-server=snaxzee/cw2-server:v2'
+                    sh 'kubectl rollout status deployments/kubernetes-task2'
+                   
+                }
+            }
+        }
+    }
 }
+									
